@@ -121,7 +121,7 @@ function getCurrentBranch() {
   }).trim();
 }
 
-function release() {
+async function release() {
   console.log('=== 🚀 Релиз новой версии ===\n');
 
   // 1. Проверка чистоты working directory
