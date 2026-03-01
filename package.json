@@ -65,6 +65,7 @@
   "scripts": {
     "package": "vsce package --no-dependencies",
     "build": "npm run package",
+    "build:pub:auto": "npm run build",
     "release": "node scripts/release.js"
   },
   "devDependencies": {
