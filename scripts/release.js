@@ -1,7 +1,6 @@
 const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const readline = require('readline');
 
 const PUB_DIR = path.resolve(__dirname, '..');
 const PACKAGE_JSON_PATH = path.join(PUB_DIR, 'package.json');
@@ -45,17 +44,6 @@ function getLastReleaseCommit() {
       cwd: PUB_DIR
     }).trim();
     return commit;
-  } catch {
-    return '';
-  }
-}
-
-function getLastTag() {
-  try {
-    return execSync('git describe --tags --abbrev=0 2>/dev/null', {
-      encoding: 'utf8',
-      cwd: PUB_DIR
-    }).trim();
   } catch {
     return '';
   }
@@ -133,21 +121,7 @@ function getCurrentBranch() {
   }).trim();
 }
 
-function confirm(message) {
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-  });
-
-  return new Promise((resolve) => {
-    rl.question(`${message} (y/n): `, (answer) => {
-      rl.close();
-      resolve(answer.toLowerCase() === 'y' || answer.toLowerCase() === 'yes');
-    });
-  });
-}
-
-async function release() {
+function release() {
   console.log('=== 🚀 Релиз новой версии ===\n');
 
   // 1. Проверка чистоты working directory
@@ -161,12 +135,8 @@ async function release() {
   // 2. Проверка текущей ветки
   const branch = getCurrentBranch();
   if (branch !== 'main' && branch !== 'master') {
-    console.warn(`⚠️  Вы находитесь на ветке "${branch}". Рекомендуется делать релиз с main/master.`);
-    const proceed = await confirm('Продолжить?');
-    if (!proceed) {
-      console.log('Релиз отменён.');
-      process.exit(0);
-    }
+    console.warn(`⚠️  Вы находитесь на ветке "${branch}". Релиз делается с main/master.`);
+    process.exit(1);
   }
 
   // 3. Чтение текущей версии
@@ -182,11 +152,6 @@ async function release() {
 
   if (commits.length === 0) {
     console.log('⚠️  Нет новых коммитов с последнего релиза.');
-    const proceed = await confirm('Продолжить с той же версией?');
-    if (!proceed) {
-      console.log('Релиз отменён.');
-      process.exit(0);
-    }
   }
 
   console.log(`   Коммитов с последнего релиза: ${commits.length}`);
@@ -199,20 +164,7 @@ async function release() {
   const newVersion = incrementVersion(currentVersion, versionType);
   console.log(`4. Новая версия: ${newVersion}\n`);
 
-  // Подтверждение
-  console.log('План действий:');
-  console.log(`   • Обновить версию в package.json: ${currentVersion} → ${newVersion}`);
-  console.log(`   • Запустить сборку (npm run build)`);
-  console.log(`   • Создать коммит и тег в публичном репозитории`);
-  console.log(`   • Push всех изменений и тегов\n`);
-
-  const confirmed = await confirm('Продолжить релиз?');
-  if (!confirmed) {
-    console.log('Релиз отменён.');
-    process.exit(0);
-  }
-
-  console.log('\n=== Начало релиза ===\n');
+  console.log('=== Начало релиза ===\n');
 
   // 7. Обновление версии в package.json
   console.log('5. Обновление версии в package.json...');
@@ -239,50 +191,21 @@ async function release() {
 
   // 10. Push
   console.log('8. Push изменений и тегов...');
-  const pushConfirmed = await confirm('Отправить изменения и теги в remote? (y/n)');
-
-  if (pushConfirmed) {
-    try {
-      execInDir(PUB_DIR, 'git push origin HEAD');
-      execInDir(PUB_DIR, 'git push origin --tags');
-      console.log('✓ Push в публичный репозиторий завершён\n');
-    } catch (error) {
-      console.error('❌ Ошибка при push!');
-      console.error('Изменения закоммичены локально. Выполните push вручную.');
-      process.exit(1);
-    }
-  } else {
-    console.log('\n⚠️  Push не выполнен. Изменения закоммичены локально.');
-    console.log('   Для отправки выполните вручную:');
-    console.log(`   cd ${PUB_DIR} && git push origin HEAD && git push origin --tags\n`);
-  }
-
-  // 11. Создание GitHub Release
-  console.log('9. Создание GitHub Release...');
-  const releaseConfirmed = await confirm('Создать GitHub Release с .vsix файлом? (требуется gh CLI) (y/n)');
-
-  if (releaseConfirmed) {
-    try {
-      const files = fs.readdirSync(PUB_DIR).filter(f => f.endsWith('.vsix'));
-      if (files.length > 0) {
-        const vsixFile = path.join(PUB_DIR, files[0]);
-        execInDir(PUB_DIR, `gh release create v${newVersion} "${vsixFile}" --title "v${newVersion}" --generate-notes`);
-        console.log(`✓ GitHub Release создан: v${newVersion}`);
-      } else {
-        console.warn('⚠️  .vsix файл не найден. Пропускаем создание Release.');
-      }
-    } catch (error) {
-      console.warn('⚠️  Ошибка при создании GitHub Release. Установлен ли gh CLI?');
-      console.warn('   Release можно создать вручную в GitHub UI.');
-    }
+  try {
+    execInDir(PUB_DIR, 'git push origin HEAD');
+    execInDir(PUB_DIR, 'git push origin --tags');
+    console.log('✓ Push в публичный репозиторий завершён\n');
+  } catch (error) {
+    console.error('❌ Ошибка при push!');
+    console.error('Изменения закоммичены локально. Выполните push вручную.');
+    process.exit(1);
   }
 
   console.log('\n=== ✅ Релиз завершён! ===\n');
   console.log(`📦 Версия: v${newVersion}`);
   console.log(`🔗 Публичный репозиторий: ${PUB_DIR}`);
   console.log('\nСледующие шаги:');
-  console.log('   • Проверить GitHub Release');
-  console.log('   • Опубликовать в VS Code Marketplace (если не автоматически)');
+  console.log('   • Опубликовать в VS Code Marketplace вручную');
   console.log(`   • Установить расширение: code-insiders --install-extension ${PUB_DIR}/qwen-commit-${newVersion}.vsix\n`);
 }
 
