@@ -63,7 +63,9 @@
     }
   },
   "scripts": {
-    "package": "vsce package --no-dependencies"
+    "package": "vsce package --no-dependencies",
+    "build": "npm run package",
+    "release": "npx ts-node scripts/release.ts"
   },
   "devDependencies": {
     "@vscode/vsce": "^3.7.1"
