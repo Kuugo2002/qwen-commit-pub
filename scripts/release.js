@@ -122,95 +122,95 @@ function getCurrentBranch() {
 }
 
 async function release() {
-  console.log('=== 🚀 Релиз новой версии ===\n');
+  console.log('=== 🚀 新版本发布 ===\n');
 
-  // 1. Проверка чистоты working directory
-  console.log('1. Проверка чистоты working directory...');
+  // 1. 检查工作目录是否干净
+  console.log('1. 检查工作目录是否干净...');
   if (!checkWorkingDirectoryClean()) {
-    console.error('❌ Working directory не чистый. Закоммитьте или отмените изменения перед релизом.');
+    console.error('❌ 工作目录不干净。请在发布前提交或撤销更改。');
     process.exit(1);
   }
-  console.log('✓ Working directory чистый\n');
+  console.log('✓ 工作目录干净\n');
 
-  // 2. Проверка текущей ветки
+  // 2. 检查当前分支
   const branch = getCurrentBranch();
   if (branch !== 'main' && branch !== 'master') {
-    console.warn(`⚠️  Вы находитесь на ветке "${branch}". Релиз делается с main/master.`);
+    console.warn(`⚠️  您当前在分支 "${branch}" 上。发布应从 main/master 分支进行。`);
     process.exit(1);
   }
 
-  // 3. Чтение текущей версии
-  console.log('2. Чтение текущей версии...');
+  // 3. 读取当前版本
+  console.log('2. 读取当前版本...');
   const packageJson = readPackageJson();
   const currentVersion = packageJson.version;
-  console.log(`   Текущая версия: ${currentVersion}\n`);
+  console.log(`   当前版本：${currentVersion}\n`);
 
-  // 4. Получение коммитов с последнего релиза
-  console.log('3. Анализ коммитов...');
+  // 4. 获取上次发布以来的提交
+  console.log('3. 分析提交...');
   const commits = getCommitsSinceLastRelease();
   const lastReleaseCommit = getLastReleaseCommit();
 
   if (commits.length === 0) {
-    console.log('⚠️  Нет новых коммитов с последнего релиза.');
+    console.log('⚠️  自上次发布以来没有新的提交。');
   }
 
-  console.log(`   Коммитов с последнего релиза: ${commits.length}`);
+  console.log(`   自上次发布以来的提交数：${commits.length}`);
 
-  // 5. Определение типа релиза
+  // 5. 确定发布类型
   const versionType = determineVersionType(commits);
-  console.log(`   Тип релиза: ${versionType}\n`);
+  console.log(`   发布类型：${versionType}\n`);
 
-  // 6. Вычисление новой версии
+  // 6. 计算新版本
   const newVersion = incrementVersion(currentVersion, versionType);
-  console.log(`4. Новая версия: ${newVersion}\n`);
+  console.log(`4. 新版本：${newVersion}\n`);
 
-  console.log('=== Начало релиза ===\n');
+  console.log('=== 开始发布 ===\n');
 
-  // 7. Обновление версии в package.json
-  console.log('5. Обновление версии в package.json...');
+  // 7. 更新 package.json 中的版本
+  console.log('5. 更新 package.json 中的版本...');
   packageJson.version = newVersion;
   writePackageJson(packageJson);
-  console.log(`✓ Версия обновлена: ${newVersion}\n`);
+  console.log(`✓ 版本已更新：${newVersion}\n`);
 
-  // 8. Сборка
-  console.log('6. Сборка (npm run build)...');
+  // 8. 构建
+  console.log('6. 构建 (npm run build)...');
   try {
     execInDir(PUB_DIR, 'npm run build');
-    console.log('✓ Сборка завершена\n');
+    console.log('✓ 构建完成\n');
   } catch (error) {
-    console.error('❌ Ошибка при сборке!');
+    console.error('❌ 构建错误！');
     process.exit(1);
   }
 
-  // 9. Коммит и тег в публичном репозитории
-  console.log('7. Создание коммита и тега в публичном репозитории...');
+  // 9. 在公共仓库中提交和打标签
+  console.log('7. 在公共仓库中创建提交和标签...');
   execInDir(PUB_DIR, 'git add .');
   execInDir(PUB_DIR, `git commit -m "chore: release v${newVersion}"`);
   execInDir(PUB_DIR, `git tag v${newVersion}`);
-  console.log(`✓ Коммит и тег v${newVersion} созданы\n`);
+  console.log(`✓ 提交和标签 v${newVersion} 已创建\n`);
 
   // 10. Push
-  console.log('8. Push изменений и тегов...');
+  console.log('8. Push 更改和标签...');
   try {
     execInDir(PUB_DIR, 'git push origin HEAD');
     execInDir(PUB_DIR, 'git push origin --tags');
-    console.log('✓ Push в публичный репозиторий завершён\n');
+    console.log('✓ 已 Push 到公共仓库\n');
   } catch (error) {
-    console.error('❌ Ошибка при push!');
-    console.error('Изменения закоммичены локально. Выполните push вручную.');
+    console.error('❌ Push 错误！');
+    console.error('更改已在本地提交。请手动执行 push。');
     process.exit(1);
   }
 
-  console.log('\n=== ✅ Релиз завершён! ===\n');
-  console.log(`📦 Версия: v${newVersion}`);
-  console.log(`🔗 Публичный репозиторий: ${PUB_DIR}`);
-  console.log('\nСледующие шаги:');
-  console.log('   • Опубликовать в VS Code Marketplace вручную');
-  console.log(`   • Установить расширение: code-insiders --install-extension ${PUB_DIR}/qwen-commit-${newVersion}.vsix\n`);
+  console.log('\n=== ✅ 发布完成！===\n');
+  console.log(`📦 版本：v${newVersion}`);
+  console.log(`🔗 公共仓库：${PUB_DIR}`);
+  console.log('\n后续步骤:');
+  console.log('   • 手动发布到 VS Code Marketplace');
+  console.log(`   • 安装扩展：code-insiders --install-extension ${PUB_DIR}/qwen-commit-${newVersion}.vsix\n`);
 }
 
-// Запуск
+// 启动
 release().catch((error) => {
-  console.error('❌ Ошибка релиза:', error.message);
+  console.error('❌ 发布错误:', error.message);
   process.exit(1);
 });

@@ -37,39 +37,39 @@ exports.initLocale = initLocale;
 exports.t = t;
 const vscode = __importStar(require("vscode"));
 const translations = {
-    ru: {
-        statusBarGenerating: "$(sync~spin) Qwen генерирует...",
+    zh: {
+        statusBarGenerating: "$(sync~spin) Qwen 正在生成...",
         statusBarIdle: "$(qwen-icon) Qwen Commit",
-        tooltipStop: "Нажмите для остановки",
-        tooltipGenerate: "Нажмите для генерации сообщения коммита",
-        alreadyGenerating: "Генерация уже выполняется",
-        generationStopped: "Генерация остановлена",
-        noWorkspace: "Нет открытых workspace папок",
-        noChanges: "Нет изменений для коммита",
-        noChangesToAnalyze: "Нет изменений для анализа",
-        commitGenerated: "Сообщение коммита сгенерировано!",
-        emptyMessage: "Qwen вернул пустое сообщение",
-        generationCancelled: "Генерация отменена",
-        gitError: "Ошибка git: {0}",
-        qwenError: "Ошибка qwen cli: {0}",
-        qwenCliNotFound: "Qwen CLI не найден. Установите его командой: npm install -g @qwen-code/qwen-code@latest",
-        qwenCliTooLargeDiff: "Слишком большой diff. Попробуйте сделать коммит меньшими изменениями.",
-        gitExtensionNotFound: "Git extension не найдена",
-        gitRepoNotFound: "Git репозиторий не найден",
-        unknownError: "Неизвестная ошибка",
-        progressTitle: "Qwen генерирует сообщение коммита...",
-        notGitRepo: "Директория не является git-репозиторием",
-        initRepo: "Инициализировать репозиторий",
-        cancel: "Отмена",
-        repoInitialized: "Git-репозиторий инициализирован",
-        emptyRepoNoStaged: "Репозиторий пуст и нет файлов в staging area. Добавьте файлы командой `git add .` перед генерацией сообщения.",
-        stageFiles: "Показать команды",
-        commandsCopied: "Команды скопированы в буфер обмена",
-        gitCredentialsMissing: "Git не настроен. Укажите ваше имя и email для продолжения.",
-        configureGit: "Настроить Git",
-        gitConfigured: "Git настроен успешно",
-        gitUserNamePrompt: "Введите ваше имя для Git",
-        gitUserEmailPrompt: "Введите ваш email для Git",
+        tooltipStop: "点击停止",
+        tooltipGenerate: "点击生成提交消息",
+        alreadyGenerating: "生成已在进行中",
+        generationStopped: "生成已停止",
+        noWorkspace: "没有打开的工作区文件夹",
+        noChanges: "没有要提交的变化",
+        noChangesToAnalyze: "没有要分析的变化",
+        commitGenerated: "提交消息已生成！",
+        emptyMessage: "Qwen 返回空消息",
+        generationCancelled: "生成已取消",
+        gitError: "Git 错误：{0}",
+        qwenError: "Qwen CLI 错误：{0}",
+        qwenCliNotFound: "未找到 Qwen CLI。请使用以下命令安装：npm install -g @qwen-code/qwen-code@latest",
+        qwenCliTooLargeDiff: "diff 太大。请尝试提交较小的更改。",
+        gitExtensionNotFound: "未找到 Git 扩展",
+        gitRepoNotFound: "未找到 Git 仓库",
+        unknownError: "未知错误",
+        progressTitle: "Qwen 正在生成提交消息...",
+        notGitRepo: "目录不是 git 仓库",
+        initRepo: "初始化仓库",
+        cancel: "取消",
+        repoInitialized: "Git 仓库已初始化",
+        emptyRepoNoStaged: "仓库为空且暂存区没有文件。请在生成提交消息前使用 `git add .` 添加文件。",
+        stageFiles: "显示命令",
+        commandsCopied: "命令已复制到剪贴板",
+        gitCredentialsMissing: "Git 未配置。请设置您的姓名和邮箱以继续。",
+        configureGit: "配置 Git",
+        gitConfigured: "Git 配置成功",
+        gitUserNamePrompt: "输入您的 Git 用户名",
+        gitUserEmailPrompt: "输入您的 Git 邮箱",
     },
     en: {
         statusBarGenerating: "$(sync~spin) Qwen generating...",
@@ -109,7 +109,7 @@ const translations = {
 let currentLocale = "en";
 function initLocale() {
     const vscodeLang = vscode.env.language;
-    currentLocale = vscodeLang.startsWith("ru") ? "ru" : "en";
+    currentLocale = vscodeLang.startsWith("zh") ? "zh" : "en";
 }
 function t(key, ...args) {
     let message = translations[currentLocale][key] || translations.en[key];

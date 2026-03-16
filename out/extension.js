@@ -41,12 +41,12 @@ const util_1 = require("util");
 const i18n_1 = require("./i18n");
 const execAsync = (0, util_1.promisify)(child_process_1.exec);
 /**
- * Выполнение команды с передачей данных через stdin
+ * 执行命令并通过 stdin 传递数据
  */
 function execWithStdin(command, options, stdinData) {
     return new Promise((resolve, reject) => {
-        // На Windows используем shell: true для корректного запуска .cmd/.bat файлов
-        // На macOS/Linux тоже нужен shell: true для запуска npm global пакетов (qwen и др.)
+        // Windows 使用 shell: true 以正确运行 .cmd/.bat 文件
+        // macOS/Linux 也需要 shell: true 以运行 npm global 包（如 qwen 等）
         const isWindows = process.platform === 'win32';
         const isMacOrLinux = process.platform === 'darwin' || process.platform === 'linux';
         const useShell = isWindows || isMacOrLinux;
@@ -63,7 +63,7 @@ function execWithStdin(command, options, stdinData) {
         child.stderr.on('data', (data) => {
             stderr += data.toString();
         });
-        // Обработка отмены через AbortSignal
+        // 通过 AbortSignal 处理取消
         if (options.signal) {
             options.signal.addEventListener('abort', () => {
                 child.kill('SIGTERM');
@@ -79,27 +79,27 @@ function execWithStdin(command, options, stdinData) {
             }
         });
         child.on('error', reject);
-        // Записываем данные в stdin и закрываем поток
+        // 将数据写入 stdin 并关闭流
         child.stdin.write(stdinData);
         child.stdin.end();
     });
 }
-// Глобальное состояние для отслеживания генерации
+// 全局状态用于跟踪生成
 let isGenerating = false;
 let abortController = null;
 let statusBarItem;
 function activate(context) {
     (0, i18n_1.initLocale)();
     console.log("Qwen Commit extension is now active");
-    // Инициализация context key для управления видимостью кнопок
+    // 初始化 context key 以控制按钮可见性
     vscode.commands.executeCommand("setContext", "qwen-commit.isGenerating", false);
-    // Создаём status bar item для отображения статуса
+    // 创建 status bar item 用于显示状态
     statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
     statusBarItem.name = "Qwen Commit";
     statusBarItem.command = "qwen-commit.generateCommitMessage";
     context.subscriptions.push(statusBarItem);
     updateStatusBar(false);
-    // Команда генерации сообщения коммита
+    // 生成提交消息命令
     const generateDisposable = vscode.commands.registerCommand("qwen-commit.generateCommitMessage", async () => {
         if (isGenerating) {
             vscode.window.showWarningMessage((0, i18n_1.t)("alreadyGenerating"));
@@ -107,7 +107,7 @@ function activate(context) {
         }
         await generateCommitMessage(context);
     });
-    // Команда остановки генерации
+    // 停止生成命令
     const stopDisposable = vscode.commands.registerCommand("qwen-commit.stopGeneration", async () => {
         if (abortController) {
             abortController.abort();
@@ -145,7 +145,7 @@ async function generateCommitMessage(context) {
     }
     const workspacePath = workspaceFolders[0].uri.fsPath;
     try {
-        // Проверяем, является ли директория git-репозиторием
+        // 检查目录是否为 git 仓库
         let isGitRepo = true;
         try {
             await execAsync("git rev-parse --git-dir", { cwd: workspacePath });
@@ -159,7 +159,7 @@ async function generateCommitMessage(context) {
                 try {
                     await execAsync("git init", { cwd: workspacePath });
                     vscode.window.showInformationMessage((0, i18n_1.t)("repoInitialized"));
-                    // Рекурсивно вызываем функцию после инициализации
+                    // 初始化后递归调用函数
                     return await generateCommitMessage(context);
                 }
                 catch (initError) {
@@ -168,7 +168,7 @@ async function generateCommitMessage(context) {
             }
             return;
         }
-        // Получаем список измененных файлов
+        // 获取变更文件列表
         const { stdout: gitStatus } = await execAsync("git status --porcelain", {
             cwd: workspacePath,
         });
@@ -176,7 +176,7 @@ async function generateCommitMessage(context) {
             vscode.window.showInformationMessage((0, i18n_1.t)("noChanges"));
             return;
         }
-        // Проверяем наличие настроенных git credentials
+        // 检查是否配置了 git credentials
         const credentialsConfigured = await checkGitCredentials(workspacePath);
         if (!credentialsConfigured) {
             const action = await vscode.window.showErrorMessage((0, i18n_1.t)("gitCredentialsMissing"), { modal: true }, { title: (0, i18n_1.t)("configureGit") }, { title: (0, i18n_1.t)("cancel"), isCloseAffordance: true });
@@ -185,7 +185,7 @@ async function generateCommitMessage(context) {
             }
             return;
         }
-        // Проверяем, существует ли HEAD (есть ли коммиты в репозитории)
+        // 检查 HEAD 是否存在（仓库中是否有提交）
         let hasHead = true;
         try {
             await execAsync("git rev-parse HEAD", { cwd: workspacePath });
@@ -195,7 +195,7 @@ async function generateCommitMessage(context) {
         }
         let diffToUse = "";
         if (hasHead) {
-            // Используем только staged файлы (добавленные в индекс)
+            // 仅使用 staged 文件（已添加到索引的文件）
             const { stdout: stagedDiff } = await execAsync("git diff --cached HEAD", {
                 cwd: workspacePath,
             });
@@ -206,19 +206,19 @@ async function generateCommitMessage(context) {
             diffToUse = stagedDiff;
         }
         else {
-            // Репозиторий пуст (нет коммитов)
+            // 仓库为空（没有提交）
             const { stdout: stagedDiff } = await execAsync("git diff --cached", {
                 cwd: workspacePath,
             });
             if (stagedDiff.trim()) {
-                // Есть staged файлы — используем их
+                // 有 staged 文件 — 使用它们
                 diffToUse = stagedDiff;
             }
             else {
-                // Нет staged файлов — сообщаем пользователю
+                // 没有 staged 文件 — 提示用户
                 const action = await vscode.window.showInformationMessage((0, i18n_1.t)("emptyRepoNoStaged"), { modal: true }, { title: (0, i18n_1.t)("stageFiles") }, { title: (0, i18n_1.t)("cancel"), isCloseAffordance: true });
                 if (action?.title === (0, i18n_1.t)("stageFiles")) {
-                    vscode.env.clipboard.writeText(`# Добавьте файлы в staging area:\ngit add .\n\n# Затем сгенерируйте сообщение коммита через Qwen Commit`);
+                    vscode.env.clipboard.writeText(`# 添加文件到 staging area:\ngit add .\n\n# 然后通过 Qwen Commit 生成提交消息`);
                     vscode.window.showInformationMessage((0, i18n_1.t)("commandsCopied"));
                 }
                 return;
@@ -234,7 +234,7 @@ async function generateCommitMessage(context) {
 async function generateMessageWithQwen(diff, workspacePath, context) {
     isGenerating = true;
     abortController = new AbortController();
-    // Обновляем context key для переключения иконки
+    // 更新 context key 以切换图标
     vscode.commands.executeCommand("setContext", "qwen-commit.isGenerating", true);
     updateStatusBar(true);
     const progressOptions = {
@@ -243,10 +243,10 @@ async function generateMessageWithQwen(diff, workspacePath, context) {
         cancellable: true,
     };
     try {
-        // Проверяем наличие qwen cli
+        // 检查 qwen cli 是否存在
         try {
-            // На Windows используем shell: true для корректного запуска .cmd/.bat файлов
-            // На macOS/Linux тоже нужен shell: true для запуска npm global пакетов
+            // Windows 使用 shell: true 以正确运行 .cmd/.bat 文件
+            // macOS/Linux 也需要 shell: true 以运行 npm global 包
             const options = {
                 cwd: workspacePath,
                 shell: true,
@@ -262,54 +262,51 @@ async function generateMessageWithQwen(diff, workspacePath, context) {
             return;
         }
         await vscode.window.withProgress(progressOptions, async (progress, token) => {
-            // Обработка отмены через токен прогресса
+            // 通过进度令牌处理取消
             token.onCancellationRequested(() => {
                 if (abortController) {
                     abortController.abort();
                 }
             });
             progress.report({ increment: 10 });
-            // Формируем промпт для qwen cli
+            // 为 qwen cli 生成提示
             const prompt = `Generate a commit message following Conventional Commits specification based on the code changes below.
 
 Format:
 <type>(<scope>): <subject>
 
-<body>
-
 Rules:
 - type: feat|fix|docs|style|refactor|perf|test|chore|ci|build
-- subject: max 50 chars, imperative mood, no period
-- body: optional, wrap at 72 chars, explain what and why
-- **ALWAYS respond in English only**
-- Be specific and concise
+- subject: imperative mood, no period
+- **ALWAYS respond in Chinese only**
+- Keep it short and concise, no line breaks needed
 
 Changes:
 ${diff}`;
             progress.report({ increment: 20 });
-            // Вызываем qwen cli с передачей промпта через stdin (избегаем E2BIG)
+            // 通过 stdin 调用 qwen cli（避免 E2BIG）
             const { stdout } = await execWithStdin("qwen", {
                 cwd: workspacePath,
                 signal: abortController?.signal,
             }, prompt);
             progress.report({ increment: 50 });
             let commitMessage = stdout.trim();
-            // Удаляем markdown форматирование и code blocks
-            // Сначала извлекаем содержимое из code blocks
+            // 移除 markdown 格式和 code blocks
+            // 首先从 code blocks 提取内容
             const codeBlockMatch = commitMessage.match(/```(?:\w+)?\s*([\s\S]*?)```/);
             if (codeBlockMatch) {
                 commitMessage = codeBlockMatch[1].trim();
             }
-            // Затем чистим остальное форматирование
+            // 然后清理其他格式
             commitMessage = commitMessage
-                .replace(/```/g, '') // Убираем оставшиеся ```
-                .replace(/\*\*/g, '') // Убираем **
-                .replace(/\*/g, '') // Убираем *
-                .replace(/`/g, '') // Убираем `
-                .replace(/\n{3,}/g, '\n\n') // Максимум 2 пустые строки
+                .replace(/```/g, '') // 移除剩余的 ```
+                .replace(/\*\*/g, '') // 移除 **
+                .replace(/\*/g, '') // 移除 *
+                .replace(/`/g, '') // 移除 `
+                .replace(/\n{3,}/g, '\n\n') // 最多 2 个空行
                 .trim();
             if (commitMessage) {
-                // Вставляем сообщение в input box Git SCM
+                // 将消息插入 Git SCM 输入框
                 await setGitInputBoxValue(commitMessage);
                 vscode.window.showInformationMessage((0, i18n_1.t)("commitGenerated"));
             }
@@ -321,12 +318,12 @@ ${diff}`;
     }
     catch (error) {
         if (error instanceof Error && error.name === "AbortError") {
-            // Генерация была отменена
+            // 生成已取消
             vscode.window.showInformationMessage((0, i18n_1.t)("generationCancelled"));
             return;
         }
         const errorMessage = error instanceof Error ? error.message : (0, i18n_1.t)("unknownError");
-        // Специальная обработка для E2BIG (не должно возникать при stdin)
+        // E2BIG 特殊处理（使用 stdin 时不应出现）
         if (errorMessage.includes("E2BIG")) {
             vscode.window.showErrorMessage((0, i18n_1.t)("qwenCliTooLargeDiff"));
         }
@@ -355,15 +352,15 @@ async function setGitInputBoxValue(message) {
     api.repositories[0].inputBox.value = message;
 }
 /**
- * Проверка наличия настроенных git credentials (user.name и user.email)
+ * 检查是否配置了 git credentials（user.name 和 user.email）
  */
 async function checkGitCredentials(workspacePath) {
     try {
-        // Проверяем user.name
+        // 检查 user.name
         const { stdout: userName } = await execAsync("git config user.name", {
             cwd: workspacePath,
         });
-        // Проверяем user.email
+        // 检查 user.email
         const { stdout: userEmail } = await execAsync("git config user.email", {
             cwd: workspacePath,
         });
@@ -374,10 +371,10 @@ async function checkGitCredentials(workspacePath) {
     }
 }
 /**
- * Настройка git credentials через input boxes
+ * 通过输入框配置 git credentials
  */
 async function configureGitCredentials(workspacePath) {
-    // Запрашиваем имя
+    // 请求输入用户名
     const userName = await vscode.window.showInputBox({
         prompt: (0, i18n_1.t)("gitUserNamePrompt"),
         placeHolder: "John Doe",
@@ -386,7 +383,7 @@ async function configureGitCredentials(workspacePath) {
     if (!userName) {
         return;
     }
-    // Запрашиваем email
+    // 请求输入邮箱
     const userEmail = await vscode.window.showInputBox({
         prompt: (0, i18n_1.t)("gitUserEmailPrompt"),
         placeHolder: "johndoe@example.com",
@@ -395,7 +392,7 @@ async function configureGitCredentials(workspacePath) {
     if (!userEmail) {
         return;
     }
-    // Устанавливаем конфиги на локальном уровне (для проекта)
+    // 在本地（项目级别）设置配置
     try {
         await execAsync(`git config user.name "${userName}"`, {
             cwd: workspacePath,
