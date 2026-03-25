@@ -121,38 +121,6 @@ yarn outdated
 - Generate commit message: Click Qwen icon in Source Control
 - Stop generation: Click stop icon during generation
 
-## Commit Message Format
-
-Generated messages follow Conventional Commits:
-
-```
-<type>(<scope>): <subject>
-
-<body>
-```
-
-**Types:**
-
-- `feat` - New feature
-- `fix` - Bug fix
-- `docs` - Documentation
-- `style` - Code style changes
-- `refactor` - Code refactoring
-- `perf` - Performance improvements
-- `test` - Tests
-- `chore` - Maintenance tasks
-- `ci` - CI/CD changes
-- `build` - Build system changes
-
-**Example:**
-
-```
-feat(auth): add JWT token validation
-
-Implement JWT token validation middleware to secure API endpoints.
-Includes token expiration check and signature verification.
-```
-
 ## Configuration
 
 Currently, the extension works out of the box with Qwen CLI. Future versions will include customizable settings.

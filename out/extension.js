@@ -185,6 +185,12 @@ async function generateCommitMessage(context) {
             }
             return;
         }
+
+        // 自动将所有变更添加到暂存区
+        await execAsync("git add .", {
+            cwd: workspacePath,
+        });
+
         // 检查 HEAD 是否存在（仓库中是否有提交）
         let hasHead = true;
         try {
@@ -195,7 +201,7 @@ async function generateCommitMessage(context) {
         }
         let diffToUse = "";
         if (hasHead) {
-            // 仅使用 staged 文件（已添加到索引的文件）
+            // 使用 staged 文件（已添加到索引的文件）
             const { stdout: stagedDiff } = await execAsync("git diff --cached HEAD", {
                 cwd: workspacePath,
             });
@@ -270,16 +276,9 @@ async function generateMessageWithQwen(diff, workspacePath, context) {
             });
             progress.report({ increment: 10 });
             // 为 qwen cli 生成提示
-            const prompt = `Generate a commit message following Conventional Commits specification based on the code changes below.
+            const prompt = `Generate a short and concise commit message based on the code changes below.
 
-Format:
-<type>(<scope>): <subject>
-
-Rules:
-- type: feat|fix|docs|style|refactor|perf|test|chore|ci|build
-- subject: imperative mood, no period
-- **ALWAYS respond in Chinese only**
-- Keep it short and concise, no line breaks needed
+**ALWAYS respond in Chinese only**
 
 Changes:
 ${diff}`;
